@@ -16,3 +16,16 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+
+# React
+node_modules/
+frontend/dist/
+# IDE
+.idea/
