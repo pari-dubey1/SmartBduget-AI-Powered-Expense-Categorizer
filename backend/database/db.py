@@ -27,3 +27,160 @@ def init_db():
 if __name__ == "__main__":
     init_db()
     print("SmartBudget database initialized successfully.")
+    
+
+# --------------------------------------------------
+# CREATE — ADD EXPENSE
+# --------------------------------------------------
+
+def add_expense(
+    date,
+    description,
+    amount,
+    category,
+    payment_method
+):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        INSERT INTO expenses
+        (date, description, amount, category, payment_method)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            date,
+            description,
+            amount,
+            category,
+            payment_method
+        )
+    )
+
+    connection.commit()
+
+    expense_id = cursor.lastrowid
+
+    connection.close()
+
+    return expense_id
+
+
+# --------------------------------------------------
+# READ — GET ALL EXPENSES
+# --------------------------------------------------
+
+def get_expenses():
+    connection = get_db_connection()
+
+    rows = connection.execute(
+        """
+        SELECT *
+        FROM expenses
+        ORDER BY date DESC, id DESC
+        """
+    ).fetchall()
+
+    connection.close()
+
+    return [dict(row) for row in rows]
+
+
+# --------------------------------------------------
+# READ — GET ONE EXPENSE
+# --------------------------------------------------
+
+def get_expense_by_id(expense_id):
+    connection = get_db_connection()
+
+    row = connection.execute(
+        """
+        SELECT *
+        FROM expenses
+        WHERE id = ?
+        """,
+        (expense_id,)
+    ).fetchone()
+
+    connection.close()
+
+    if row is None:
+        return None
+
+    return dict(row)
+
+
+# --------------------------------------------------
+# UPDATE — UPDATE EXPENSE
+# --------------------------------------------------
+
+def update_expense(
+    expense_id,
+    date,
+    description,
+    amount,
+    category,
+    payment_method
+):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        UPDATE expenses
+        SET date = ?,
+            description = ?,
+            amount = ?,
+            category = ?,
+            payment_method = ?
+        WHERE id = ?
+        """,
+        (
+            date,
+            description,
+            amount,
+            category,
+            payment_method,
+            expense_id
+        )
+    )
+
+    connection.commit()
+
+    updated = cursor.rowcount > 0
+
+    connection.close()
+
+    return updated
+
+
+# --------------------------------------------------
+# DELETE — DELETE EXPENSE
+# --------------------------------------------------
+
+def delete_expense(expense_id):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        DELETE FROM expenses
+        WHERE id = ?
+        """,
+        (expense_id,)
+    )
+
+    connection.commit()
+
+    deleted = cursor.rowcount > 0
+
+    connection.close()
+
+    return deleted
+
+
+# --------------------------------------------------
+# DIRECT EXECUTION
+# --------------------------------------------------
+
+if __name__ == "__main__":
+    init_db()
+    print("SmartBudget database initialized successfully.")
