@@ -7,6 +7,8 @@ from database.db import (
     update_expense,
     delete_expense
 )
+from services.predictor import predict_category
+from utils.validation import validate_expense_data
 
 
 expense_bp = Blueprint(
@@ -18,51 +20,31 @@ expense_bp = Blueprint(
 def create_expense():
     data = request.get_json()
 
-    if not data:
+    # Validate request
+    is_valid, error_message = validate_expense_data(data)
+
+    if not is_valid:
         return jsonify({
-            "error": "Request body is required"
+            "error": error_message
         }), 400
 
-    date = data.get("date")
-    description = data.get("description")
-    amount = data.get("amount")
-    payment_method = data.get("payment_method")
+    date = data["date"]
+    description = data["description"]
+    amount = float(data["amount"])
+    payment_method = data["payment_method"]
 
-    # Temporary category
-    category = data.get("category", "Other")
-
-    if not date:
-        return jsonify({
-            "error": "Date is required"
-        }), 400
-
-    if not description:
-        return jsonify({
-            "error": "Description is required"
-        }), 400
-
-    if amount is None:
-        return jsonify({
-            "error": "Amount is required"
-        }), 400
-
-    if not payment_method:
-        return jsonify({
-            "error": "Payment method is required"
-        }), 400
-
+    # Predict category using ML
     try:
-        amount = float(amount)
-    except (TypeError, ValueError):
-        return jsonify({
-            "error": "Amount must be a number"
-        }), 400
+        category = predict_category(description)
 
-    if amount <= 0:
-        return jsonify({
-            "error": "Amount must be greater than 0"
-        }), 400
+    except Exception as error:
+        print("Prediction error:", error)
 
+        return jsonify({
+            "error": "Unable to predict expense category"
+        }), 500
+
+    # Save expense
     expense_id = add_expense(
         date,
         description,
