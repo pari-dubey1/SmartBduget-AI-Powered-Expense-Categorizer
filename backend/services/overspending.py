@@ -22,3 +22,63 @@ def check_overspending(current_spending: float, average_spending: float) -> dict
         "percentage_increase": round(percentage_increase, 2),
         "message": message
     }
+def analyze_budget_status(budget_data):
+
+    results = []
+
+    for item in budget_data:
+
+        budget = item["budget"]
+        spent = item["spent"]
+
+        remaining = budget - spent
+
+        usage_percentage = (
+            (spent / budget) * 100
+            if budget > 0
+            else 0
+        )
+
+        if spent > budget:
+
+            status = "overspending"
+
+            message = (
+                f"You have exceeded your "
+                f"{item['category']} budget by "
+                f"₹{abs(remaining):.2f}."
+            )
+
+        elif usage_percentage >= 80:
+
+            status = "warning"
+
+            message = (
+                f"You have used "
+                f"{usage_percentage:.1f}% of your "
+                f"{item['category']} budget."
+            )
+
+        else:
+
+            status = "safe"
+
+            message = (
+                f"Your {item['category']} spending "
+                f"is within budget."
+            )
+
+        results.append({
+            "category": item["category"],
+            "budget": budget,
+            "spent": spent,
+            "remaining": remaining,
+            "usage_percentage": round(
+                usage_percentage,
+                2
+            ),
+            "status": status,
+            "message": message
+        })
+
+    return results

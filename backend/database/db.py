@@ -348,3 +348,177 @@ def get_average_expense(month=None, year=None):
     connection.close()
 
     return float(row["average"])
+def add_budget(category, amount, month, year):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        INSERT INTO budgets
+        (category, amount, month, year)
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            category,
+            amount,
+            month,
+            year
+        )
+    )
+
+    connection.commit()
+
+    budget_id = cursor.lastrowid
+
+    connection.close()
+
+    return budget_id
+
+def get_budgets(month=None, year=None):
+    connection = get_db_connection()
+
+    query = """
+        SELECT *
+        FROM budgets
+    """
+
+    params = []
+
+    if month is not None and year is not None:
+        query += """
+            WHERE month = ?
+            AND year = ?
+        """
+
+        params = [
+            month,
+            year
+        ]
+
+    query += """
+        ORDER BY category
+    """
+
+    rows = connection.execute(
+        query,
+        params
+    ).fetchall()
+
+    connection.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]
+def get_budget_by_id(budget_id):
+    connection = get_db_connection()
+
+    row = connection.execute(
+        """
+        SELECT *
+        FROM budgets
+        WHERE id = ?
+        """,
+        (budget_id,)
+    ).fetchone()
+
+    connection.close()
+
+    if row is None:
+        return None
+
+    return dict(row)
+
+
+def update_budget(
+    budget_id,
+    category,
+    amount,
+    month,
+    year
+):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        UPDATE budgets
+        SET category = ?,
+            amount = ?,
+            month = ?,
+            year = ?
+        WHERE id = ?
+        """,
+        (
+            category,
+            amount,
+            month,
+            year,
+            budget_id
+        )
+    )
+
+    connection.commit()
+
+    updated = cursor.rowcount > 0
+
+    connection.close()
+
+    return updated
+
+
+def delete_budget(budget_id):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        DELETE FROM budgets
+        WHERE id = ?
+        """,
+        (budget_id,)
+    )
+
+    connection.commit()
+
+    deleted = cursor.rowcount > 0
+
+    connection.close()
+
+    return deleted
+def get_budget_status(month, year):
+    connection = get_db_connection()
+
+    rows = connection.execute(
+        """
+        SELECT
+            b.category,
+            b.amount AS budget,
+            COALESCE(SUM(e.amount), 0) AS spent
+        FROM budgets b
+
+        LEFT JOIN expenses e
+            ON e.category = b.category
+            AND CAST(strftime('%m', e.date) AS INTEGER) = b.month
+            AND CAST(strftime('%Y', e.date) AS INTEGER) = b.year
+
+        WHERE b.month = ?
+        AND b.year = ?
+
+        GROUP BY
+            b.id,
+            b.category,
+            b.amount
+
+        ORDER BY b.category
+        """,
+        (month, year)
+    ).fetchall()
+
+    connection.close()
+
+    return [
+        {
+            "category": row["category"],
+            "budget": float(row["budget"]),
+            "spent": float(row["spent"])
+        }
+        for row in rows
+    ]
