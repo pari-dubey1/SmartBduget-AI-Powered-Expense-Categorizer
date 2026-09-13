@@ -522,3 +522,106 @@ def get_budget_status(month, year):
         }
         for row in rows
     ]
+# Get total spending for a specific month and year
+def get_month_total(month, year):
+    connection = get_db_connection()
+
+    row = connection.execute(
+        """
+        SELECT COALESCE(SUM(amount), 0) AS total
+        FROM expenses
+        WHERE strftime('%m', date) = ?
+        AND strftime('%Y', date) = ?
+        """,
+        (
+            f"{month:02d}",
+            str(year)
+        )
+    ).fetchone()
+
+    connection.close()
+
+    return float(row["total"])
+
+
+# Get average spending from previous months
+def get_previous_months_average(
+    month,
+    year,
+    number_of_months=3
+):
+    connection = get_db_connection()
+
+    rows = connection.execute(
+        """
+        SELECT
+            strftime('%Y', date) AS year,
+            strftime('%m', date) AS month,
+            SUM(amount) AS total
+        FROM expenses
+        GROUP BY year, month
+        ORDER BY year DESC, month DESC
+        """
+    ).fetchall()
+
+    connection.close()
+
+    previous_totals = []
+
+    for row in rows:
+
+        row_year = int(row["year"])
+        row_month = int(row["month"])
+
+        if (
+            row_year < year
+            or (
+                row_year == year
+                and row_month < month
+            )
+        ):
+            previous_totals.append(
+                float(row["total"])
+            )
+
+        if len(previous_totals) == number_of_months:
+            break
+
+    if not previous_totals:
+        return 0.0
+
+    return float(
+        sum(previous_totals)
+        / len(previous_totals)
+    )
+
+
+# Get current month's transaction features
+def get_monthly_prediction_features(month, year):
+    connection = get_db_connection()
+
+    row = connection.execute(
+        """
+        SELECT
+            COUNT(*) AS transaction_count,
+            COALESCE(AVG(amount), 0) AS average_transaction
+        FROM expenses
+        WHERE strftime('%m', date) = ?
+        AND strftime('%Y', date) = ?
+        """,
+        (
+            f"{month:02d}",
+            str(year)
+        )
+    ).fetchone()
+
+    connection.close()
+
+    return {
+        "transaction_count": int(
+            row["transaction_count"]
+        ),
+        "average_transaction": float(
+            row["average_transaction"]
+        )
+    }
