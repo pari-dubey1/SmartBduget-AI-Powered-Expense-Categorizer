@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import sqlite3
+from flask import Blueprint, request, jsonify, current_app
 import pandas as pd
 
 from database.db import (
@@ -12,6 +13,7 @@ from database.db import (
 )
 from services.overspending import analyze_budget_status
 from services.savings import get_savings_suggestion
+from services.predictor import get_supported_categories
 
 
 budget_bp = Blueprint(
@@ -41,6 +43,8 @@ def create_budget():
         return jsonify({
             "error": "Category is required"
         }), 400
+    if category not in get_supported_categories():
+        return jsonify({"error": "Category is not supported"}), 400
 
     if amount is None:
         return jsonify({
@@ -75,12 +79,15 @@ def create_budget():
             "error": "Month must be between 1 and 12"
         }), 400
 
-    budget_id = add_budget(
-        category,
-        amount,
-        month,
-        year
-    )
+    try:
+        budget_id = add_budget(category, amount, month, year)
+    except sqlite3.IntegrityError:
+        return jsonify({
+            "error": "A budget already exists for this category and month"
+        }), 409
+    except Exception as error:
+        current_app.logger.exception("Budget creation failed: %s", error)
+        return jsonify({"error": "Could not create budget"}), 500
 
     return jsonify({
         "message": "Budget created successfully",
@@ -161,6 +168,8 @@ def edit_budget(budget_id):
         "category",
         existing["category"]
     )
+    if category not in get_supported_categories():
+        return jsonify({"error": "Category is not supported"}), 400
 
     amount = data.get(
         "amount",
@@ -200,13 +209,12 @@ def edit_budget(budget_id):
             "error": "Month must be between 1 and 12"
         }), 400
 
-    updated = update_budget(
-        budget_id,
-        category,
-        amount,
-        month,
-        year
-    )
+    try:
+        updated = update_budget(budget_id, category, amount, month, year)
+    except sqlite3.IntegrityError:
+        return jsonify({
+            "error": "A budget already exists for this category and month"
+        }), 409
 
     if not updated:
 

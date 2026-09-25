@@ -7,6 +7,7 @@ from database.db import (
     get_monthly_spending,
     get_highest_category,
     get_average_expense
+    ,get_payment_method_spending
 )
 
 
@@ -16,6 +17,7 @@ dashboard_bp = Blueprint(
     url_prefix="/api/dashboard"
 )
 @dashboard_bp.route("/summary", methods=["GET"])
+@dashboard_bp.route("", methods=["GET"])
 def dashboard_summary():
 
     month = request.args.get("month")
@@ -59,6 +61,11 @@ def dashboard_summary():
         "transaction_count": count,
         "average_expense": average,
         "highest_category": highest_category
+        ,
+        "categories": get_category_spending(month, year),
+        "all_categories": get_category_spending(),
+        "payment_methods": get_payment_method_spending(month, year),
+        "monthly_spending": get_monthly_spending()
     }), 200
 @dashboard_bp.route("/category", methods=["GET"])
 def category_summary():

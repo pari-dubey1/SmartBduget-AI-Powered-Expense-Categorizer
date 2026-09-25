@@ -7,7 +7,7 @@ from database.db import (
     update_expense,
     delete_expense
 )
-from services.predictor import predict_category
+from services.predictor import predict_category, get_supported_categories
 from utils.validation import validate_expense_data
 
 
@@ -33,16 +33,17 @@ def create_expense():
     amount = float(data["amount"])
     payment_method = data["payment_method"]
 
-    # Predict category using ML
-    try:
-        category = predict_category(description)
-
-    except Exception as error:
-        print("Prediction error:", error)
-
-        return jsonify({
-            "error": "Unable to predict expense category"
-        }), 500
+    requested_category = data.get("category")
+    if requested_category:
+        if requested_category not in get_supported_categories():
+            return jsonify({"error": "Category is not supported"}), 400
+        category = requested_category
+    else:
+        try:
+            category = predict_category(description)
+        except Exception as error:
+            print("Prediction error:", error)
+            return jsonify({"error": "Unable to predict expense category"}), 500
 
     # Save expense
     expense_id = add_expense(
@@ -111,6 +112,8 @@ def edit_expense(expense_id):
         "category",
         existing_expense["category"]
     )
+    if category not in get_supported_categories():
+        return jsonify({"error": "Category is not supported"}), 400
 
     payment_method = data.get(
         "payment_method",

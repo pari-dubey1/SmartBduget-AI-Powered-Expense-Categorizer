@@ -6,6 +6,7 @@ from database.db import (
     get_month_total,
     get_previous_months_average,
     get_monthly_prediction_features
+    ,get_total_budget
 )
 
 from services.monthly_predictor import (
@@ -192,6 +193,8 @@ def monthly_prediction():
         prediction - current_spending,
         0
     )
+    total_budget = get_total_budget(month, year)
+    remaining_budget = max(total_budget - current_spending, 0)
 
     return jsonify({
         "month": month,
@@ -205,5 +208,7 @@ def monthly_prediction():
             float(expected_remaining),
             2
         ),
+        "total_budget": round(total_budget, 2),
+        "remaining_budget": round(remaining_budget, 2),
         "prediction_method": prediction_method
     }), 200

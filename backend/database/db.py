@@ -348,6 +348,38 @@ def get_average_expense(month=None, year=None):
     connection.close()
 
     return float(row["average"])
+
+
+def get_payment_method_spending(month=None, year=None):
+    connection = get_db_connection()
+    query = """
+        SELECT payment_method, COALESCE(SUM(amount), 0) AS total
+        FROM expenses
+    """
+    params = []
+    if month is not None and year is not None:
+        query += """
+            WHERE strftime('%m', date) = ?
+            AND strftime('%Y', date) = ?
+        """
+        params = [f"{int(month):02d}", str(year)]
+    query += " GROUP BY payment_method ORDER BY total DESC"
+    rows = connection.execute(query, params).fetchall()
+    connection.close()
+    return [
+        {"payment_method": row["payment_method"], "total": float(row["total"])}
+        for row in rows
+    ]
+
+
+def get_total_budget(month, year):
+    connection = get_db_connection()
+    row = connection.execute(
+        "SELECT COALESCE(SUM(amount), 0) AS total FROM budgets WHERE month = ? AND year = ?",
+        (month, year),
+    ).fetchone()
+    connection.close()
+    return float(row["total"])
 def add_budget(category, amount, month, year):
     connection = get_db_connection()
 

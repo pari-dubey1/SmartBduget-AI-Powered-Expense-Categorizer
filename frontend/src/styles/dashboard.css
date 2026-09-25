@@ -1,0 +1,50 @@
+.dashboard{
+    display:flex;
+    flex-direction:column;
+    gap:25px;
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+}
+
+.charts{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+.bottom{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+@media(max-width:1100px){
+
+.cards{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+.charts,
+.bottom{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+@media(max-width:700px){
+
+.cards{
+
+grid-template-columns:1fr;
+
+}
+
+}

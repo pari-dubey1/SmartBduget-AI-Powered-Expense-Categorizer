@@ -1,0 +1,29 @@
+.card{
+
+background:#1e293b;
+
+padding:25px;
+
+border-radius:22px;
+
+box-shadow:0 20px 40px rgba(0,0,0,.25);
+
+transition:.35s;
+
+border:1px solid rgba(255,255,255,.05);
+
+}
+
+.card:hover{
+
+transform:translateY(-5px);
+
+}
+
+.card h2{
+
+margin-bottom:20px;
+
+font-size:20px;
+
+}
